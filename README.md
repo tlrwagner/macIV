@@ -23,7 +23,7 @@ This repository hosts the **launcher, installer, and build tools only** — ther
 Open **Terminal** (`Cmd+Space`, type `Terminal`, press Enter), paste this line and press Enter:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tanmayisdumb/macIV/main/quick-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tlrwagner/macIV/main/quick-install.sh | bash
 ```
 
 It automatically finds your game files (Steam install, existing app, or any GTA IV folder in `~/Downloads`), compiles the native Metal engine for your Apple Silicon Mac, configures display preferences, and bakes **Grand Theft Auto IV.app** directly into your Downloads folder.
@@ -84,14 +84,14 @@ If you download depots manually through the Steam client console (`steam://open/
 Add the path to your GTA IV folder (the folder containing `GTAIV.exe` and `pc/`) or any `.app` containing the files:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tanmayisdumb/macIV/main/quick-install.sh | bash -s -- ~/Downloads/"Grand Theft Auto IV"
+curl -fsSL https://raw.githubusercontent.com/tlrwagner/macIV/main/quick-install.sh | bash -s -- ~/Downloads/"Grand Theft Auto IV"
 ```
 
 ### Prefer a classic disk image?
 Add `--dmg` to produce a drag-to-Applications `Grand Theft Auto IV.dmg`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tanmayisdumb/macIV/main/quick-install.sh | bash -s -- --dmg
+curl -fsSL https://raw.githubusercontent.com/tlrwagner/macIV/main/quick-install.sh | bash -s -- --dmg
 ```
 
 ### Upgrading?
@@ -105,7 +105,7 @@ Run the same one-liner again at any time — it automatically reuses the game fi
 |---|---|
 | [`macIV-macos-arm64.tar.gz`](https://raw.githubusercontent.com/tanmayisdumb/macIV/main/macIV-macos-arm64.tar.gz) | Standalone app bundle and runtime kit without game assets |
 | [`macIV-macos-arm64.zip`](https://raw.githubusercontent.com/tanmayisdumb/macIV/main/macIV-macos-arm64.zip) | Same standalone app bundle in `.zip` format |
-| [`quick-install.sh`](https://raw.githubusercontent.com/tanmayisdumb/macIV/main/quick-install.sh) | The interactive installer script run by the one-liner |
+| [`quick-install.sh`](https://raw.githubusercontent.com/tlrwagner/macIV/main/quick-install.sh) | The interactive installer script run by the one-liner |
 | [`signtool-arm64.tar.gz`](https://raw.githubusercontent.com/tanmayisdumb/macIV/main/signtool-arm64.tar.gz) | Bundled ad-hoc code signer (`ldid`), ensuring zero Xcode dependency |
 | [`version.sha`](https://raw.githubusercontent.com/tanmayisdumb/macIV/main/version.sha) | SHA256 checksum of the native launcher binary |
 

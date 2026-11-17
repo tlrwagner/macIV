@@ -17,7 +17,7 @@ set -euo pipefail
 
 # GitHub repo the installer pulls its own files from (owner/name). Forks: set
 # this to your fork, or run with MACIV_REPO=you/macIV.
-MACIV_REPO="${MACIV_REPO:-tanmayisdumb/macIV}"
+MACIV_REPO="${MACIV_REPO:-tlrwagner/macIV}"
 RAW_BASE="https://raw.githubusercontent.com/$MACIV_REPO/main"
 RELEASE_URL="$RAW_BASE/macIV-macos-arm64.tar.gz"
 SIGNTOOL_URL="$RAW_BASE/signtool-arm64.tar.gz"
