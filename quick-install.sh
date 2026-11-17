@@ -15,8 +15,18 @@
 #                    or copies in ~/Downloads.
 set -euo pipefail
 
-RELEASE_URL="https://raw.githubusercontent.com/tanmayisdumb/macIV/main/macIV-macos-arm64.tar.gz"
-SIGNTOOL_URL="https://raw.githubusercontent.com/tanmayisdumb/macIV/main/signtool-arm64.tar.gz"
+# GitHub repo the installer pulls its own files from (owner/name). Forks: set
+# this to your fork, or run with MACIV_REPO=you/macIV.
+MACIV_REPO="${MACIV_REPO:-tanmayisdumb/macIV}"
+RAW_BASE="https://raw.githubusercontent.com/$MACIV_REPO/main"
+RELEASE_URL="$RAW_BASE/macIV-macos-arm64.tar.gz"
+SIGNTOOL_URL="$RAW_BASE/signtool-arm64.tar.gz"
+# Steamworks redistributable (universal libsteam_api.dylib) for Steam achievements,
+# from steamworks-rs' copy of the Steamworks SDK, pinned by commit and hash.
+STEAM_API_URL="https://raw.githubusercontent.com/Noxime/steamworks-rs/099424d8446ca3a5e3eb93e178f71b03efd35390/steamworks-sys/lib/steam/redistributable_bin/osx/libsteam_api.dylib"
+STEAM_API_SHA256="a37faf19675b943a3c9717d25d9a881f5addb7f0ee728e03de7aac143ba759d2"
+# Set MACIV_STEAM_ACHIEVEMENTS=0 to build without the Steam achievements bridge.
+MACIV_STEAM_ACHIEVEMENTS="${MACIV_STEAM_ACHIEVEMENTS:-1}"
 BUILDER_URL="https://github.com/Awis13/liberty-pro-max/releases/download/v0.4.1-beta/Liberty.Pro.Max.Builder.zip"
 BUILDER_SHA256="80cd1bfddc1b899cff6030ab511dca01a05cd736882322cb46ce7ee816d64bb4"
 EXPECTED_EXE_SHA256="3d90e7c516fa450ca002e5031e62c0f66b404590f33e6cc9793b0da4fffbfd0f"
@@ -332,7 +342,7 @@ if [ "$EXE_SHA" != "$EXPECTED_EXE_SHA256" ]; then
 	done
 	if [ -z "$PATCH_FILE" ]; then
 		PATCH_FILE="$TMP/ce_to_1080.patch"
-		curl -fsSL "https://raw.githubusercontent.com/tanmayisdumb/macIV/main/src/ce_to_1080.patch" -o "$PATCH_FILE"
+		curl -fsSL "$RAW_BASE/src/ce_to_1080.patch" -o "$PATCH_FILE"
 	fi
 	/usr/bin/bspatch "$ASSET_SRC/GTAIV.exe" "$PATCHED_EXE" "$PATCH_FILE" || die "Failed to apply Complete Edition compatibility patch"
 	chmod +x "$PATCHED_EXE"
@@ -483,6 +493,28 @@ void hook_0085B450(Ctx& c) {
 EOF
 fi
 
+# Steam achievements bridge: forwards the game's achievement calls (xlive #5278)
+# to Steam. Compiled into the engine through community_fixes.cpp.
+STEAM_ACH_ON=no
+if [ "$MACIV_STEAM_ACHIEVEMENTS" != "0" ] && [ -f "$COMMUNITY_CPP" ]; then
+	STEAM_INC="$(dirname "$COMMUNITY_CPP")/steam_achievements.inc"
+	if [ -f "$SCRIPT_DIR/src/steam_achievements.inc" ]; then
+		cp "$SCRIPT_DIR/src/steam_achievements.inc" "$STEAM_INC"
+	else
+		curl -fsSL "$RAW_BASE/src/steam_achievements.inc" -o "$STEAM_INC" 2>/dev/null || rm -f "$STEAM_INC"
+	fi
+	if [ -f "$STEAM_INC" ]; then
+		# The bridge's hash goes in the include line, so a changed bridge changes
+		# community_fixes.cpp too and the builder's object cache recompiles it.
+		STEAM_INC_SHA="$(shasum -a 256 "$STEAM_INC" | awk '{print $1}')"
+		grep -q 'steam_achievements.inc' "$COMMUNITY_CPP" \
+			|| printf '\n#include "steam_achievements.inc"  // macIV: Steam achievements %s\n' "$STEAM_INC_SHA" >> "$COMMUNITY_CPP"
+		STEAM_ACH_ON=yes
+	else
+		echo "warning: could not fetch steam_achievements.inc from $MACIV_REPO; building without Steam achievements" >&2
+	fi
+fi
+
 # ---------------------------------------------------------------------------
 # Step 4: Translating & compiling native game engine
 # ---------------------------------------------------------------------------
@@ -577,7 +609,6 @@ fi
 mv "$BUILT_APP" "$APP"
 
 # Inject our native launcher & metadata
-RAW_BASE="https://raw.githubusercontent.com/tanmayisdumb/macIV/main"
 if [ -f "$SCRIPT_DIR/src/macIV" ]; then
 	cp "$SCRIPT_DIR/src/macIV" "$APP/Contents/MacOS/macIV"
 else
@@ -613,6 +644,24 @@ fi
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable macIV" "$APP/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string macIV" "$APP/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile macIV" "$APP/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :LSApplicationCategoryType string public.app-category.games" "$APP/Contents/Info.plist" 2>/dev/null || true
+
+# Steamworks library for the achievements bridge (loaded at run time; without
+# it the game runs as before, just without Steam achievements).
+if [ "$STEAM_ACH_ON" = yes ]; then
+	STEAM_DYLIB="$APP/Contents/Frameworks/libsteam_api.dylib"
+	mkdir -p "$APP/Contents/Frameworks"
+	if [ -f "$SCRIPT_DIR/libsteam_api.dylib" ]; then
+		cp "$SCRIPT_DIR/libsteam_api.dylib" "$STEAM_DYLIB"
+	else
+		curl -fsSL "$STEAM_API_URL" -o "$STEAM_DYLIB" 2>/dev/null || rm -f "$STEAM_DYLIB"
+	fi
+	if [ -f "$STEAM_DYLIB" ] && [ "$(shasum -a 256 "$STEAM_DYLIB" | awk '{print $1}')" = "$STEAM_API_SHA256" ]; then
+		ok "Steam achievements enabled (Steam must be running when you play)"
+	else
+		rm -f "$STEAM_DYLIB"
+		echo "warning: libsteam_api.dylib download failed or did not match its checksum; Steam achievements off" >&2
+	fi
+fi
 
 # ---------------------------------------------------------------------------
 # Step 5: Baking game assets into app bundle

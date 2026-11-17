@@ -175,6 +175,14 @@ void hook_0085B450(Ctx& c) {
 EOF
 fi
 
+# Steam achievements bridge (see src/steam_achievements.inc)
+if [ -f "$COMMUNITY_CPP" ] && [ -f "$SCRIPT_DIR/steam_achievements.inc" ]; then
+    echo "--> Adding Steam achievements bridge..."
+    cp "$SCRIPT_DIR/steam_achievements.inc" "$(dirname "$COMMUNITY_CPP")/steam_achievements.inc"
+    grep -q 'steam_achievements.inc' "$COMMUNITY_CPP" \
+        || printf '\n#include "steam_achievements.inc"  // macIV: Steam achievements\n' >> "$COMMUNITY_CPP"
+fi
+
 # Copy Builder app binary for headless / GUI builds
 mkdir -p "$APP_DIR/Contents/Resources/builder"
 cp "$EXTRACT_DIR/Liberty Pro Max Builder.app/Contents/MacOS/Builder" "$APP_DIR/Contents/Resources/builder/Builder"

@@ -146,6 +146,13 @@ The goal of `macIV` is a faithful, high-performance native Mac experience: authe
 - **Includes All DLCs**: Automatically detects and bakes *The Lost and Damned* (`TLAD`) and *The Ballad of Gay Tony* (`TBoGT`) into the standalone app bundle.
 - **Complete Edition Script Crash Fixed (`SCRT70`)**: Neutralizes the fatal phone crash (`747217401`) caused by Complete Edition script files calling unregistered multiplayer natives.
 
+### 🏆 Steam Achievements
+- **Your Steam achievements unlock while you play.** v1.0.8.0 still reports achievements the old Games for Windows – LIVE way; macIV catches those calls and forwards them to Steam for *GTA IV: The Complete Edition* (app 12210), so they land on your Steam profile like on Windows.
+- **Requirements:** the Steam client running and signed in to the account that owns the game. Steam also shows you as in-game and counts play time.
+- **Coverage:** all 40 GTA IV achievements. *The Lost and Damned* and *The Ballad of Gay Tony* achievement ids aren't documented yet, so they're logged instead of sent — the log line tells you the one-line mapping to add to `~/Library/Application Support/gtaiv/steam_achievements.txt` (`<episode> <id> <STEAM_API_NAME>`; episode 1 = TLAD, 2 = TBoGT).
+- **Log:** `~/Library/Logs/macIV-steam-achievements.log`. Turn it off with `GTAIV_STEAM_ACHIEVEMENTS=0`, or build without it using `MACIV_STEAM_ACHIEVEMENTS=0`.
+- The Steamworks library (`libsteam_api.dylib`) is downloaded at install time from a pinned, checksum-verified copy; without it, or without Steam running, the game plays exactly as before.
+
 ### 🎮 Modern Input & Controllers
 - **Native Game Controllers**: Out-of-the-box support for PlayStation DualSense / DualShock 4, Xbox Wireless, and Nintendo Switch Pro Controllers via Apple's `GameController.framework`.
 - **Full Keyboard & Mouse**: Smooth raw mouse camera tracking without acceleration jumps or cursor drift.
