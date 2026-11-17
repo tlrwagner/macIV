@@ -621,13 +621,18 @@ else
 	clang -O3 -arch arm64 -framework CoreFoundation -lz "$MACIV_C" -o "$APP/Contents/MacOS/macIV"
 fi
 
+# The engine build has no Contents/Resources yet (the game data step creates
+# it later); without this, the tool and icon below fail to copy silently and
+# the app shows a blank icon.
+mkdir -p "$APP/Contents/Resources"
+
 # Bundle savegame repair tool
 if [ -f "$SCRIPT_DIR/tools/fix_save.py" ]; then
 	cp "$SCRIPT_DIR/tools/fix_save.py" "$APP/Contents/Resources/fix_save.py"
 elif [ -f "$SCRIPT_DIR/src/fix_save.py" ]; then
 	cp "$SCRIPT_DIR/src/fix_save.py" "$APP/Contents/Resources/fix_save.py"
 else
-	curl -fsSL "$RAW_BASE/tools/fix_save.py" -o "$APP/Contents/Resources/fix_save.py" 2>/dev/null || true
+	curl -fsSL "$RAW_BASE/src/fix_save.py" -o "$APP/Contents/Resources/fix_save.py" 2>/dev/null || true
 fi
 chmod +x "$APP/Contents/Resources/fix_save.py" 2>/dev/null || true
 
