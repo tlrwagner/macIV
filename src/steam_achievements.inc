@@ -8,15 +8,18 @@
 // wins), forwards each achievement to Steam, then answers the game exactly
 // as the stand-in did.
 //
-// The game's achievement ids are Rockstar's ACHIEVEMENT_IDS script enum
-// (THETOUR = 1 ... VIRALKILLME = 50). The Complete Edition's Steam API
-// names are those same enum names, so ids 1-40 map directly. 41-50 are
-// the GFWL multiplayer achievements, which Steam does not have.
-//
-// The episodes (TLAD, TBoGT) run inside the same executable here; the ids
-// their scripts pass are not documented, so they are logged and not sent
-// unless an override line maps them (see kOverrideFile below). An override
-// can also remap or disable a base-game id.
+// The game's achievement ids are one numbering for GTA IV and both
+// episodes, read from the game's own scripts (the id passed to the
+// achievement native in each award site):
+//   1-40   GTA IV, Rockstar's ACHIEVEMENT_IDS enum; the Complete Edition's
+//          Steam API names are those same enum names
+//   41-50  GFWL multiplayer achievements, not on Steam
+//   51-55  The Lost and Damned (E1*), 56-65 The Ballad of Gay Tony (E2*);
+//          API names from the Complete Edition's GTAIV.exe, matched to ids
+//          by the script that awards each one
+// The episodes also award some GTA IV ids (darts, pool, QUB3D...), so the
+// table applies whichever game is running. An override line (see
+// kOverrideFile below) can remap or disable any id.
 //
 // Steam is reached through libsteam_api.dylib (Steamworks flat API),
 // loaded with dlopen from the app's Frameworks folder, so a missing
@@ -60,11 +63,12 @@ constexpr const char* kSteamAppId = "12210";
 // Gay Tony (see src/episodes.cpp).
 constexpr recomp::gaddr kRunningEpisode = 0x0112D754;
 // Optional overrides, one per line: "<episode> <id> <STEAM_API_NAME>", or
-// "<episode> <id> -" to send nothing for that id. '#' starts a comment.
+// "<episode> <id> -" to send nothing for that id, where episode is the game
+// running when the id is awarded. '#' starts a comment.
 constexpr const char* kOverrideFile = "steam_achievements.txt";
 
-// Rockstar's ACHIEVEMENT_IDS enum: index = id. Empty = not on Steam.
-const char* const kBaseNames[] = {
+// Steam API name by game achievement id. Empty = not on Steam.
+const char* const kSteamNames[] = {
     "",                          //  0
     "THETOUR",                   //  1 Off The Boat
     "SCOREDARTGAME",             //  2 One Hundred And Eighty
@@ -106,9 +110,25 @@ const char* const kBaseNames[] = {
     "STORYDONE",                 // 38 You Won!
     "STREETLIGHTSDOWN",          // 39 Liberty City Minute
     "GAMECOMPLETION100",         // 40 Key To The City
-    // 41-50: GFWL multiplayer achievements, not on Steam.
+    "", "", "", "", "", "", "", "", "", "",  // 41-50 GFWL multiplayer
+    "E1INTRO",                   // 51 TLAD: One Percenter       (billy1)
+    "E1BECOMELEADER",            // 52 TLAD: The Lost Boy        (billy6)
+    "E1FINISHSTORY",             // 53 TLAD: Easy Rider          (e1endcredits)
+    "E1KNOCKOFF",                // 54 TLAD: Get Good Wood       (bike races)
+    "E1BUDDYSTAT",               // 55 TLAD: Full Chat           (Terry & Clay)
+    "E2BASEJUMP",                // 56 TBoGT: Gone Down          (basejumping)
+    "E2TRINITY",                 // 57 TBoGT: Diamonds Forever   (tony8)
+    "E2GOLF",                    // 58 TBoGT: Four Play          (golf)
+    "E2FIGHTC",                  // 59 TBoGT: Bear Fight         (fightclubring)
+    "E2DANCE",                   // 60 TBoGT: Catch the Bus      (busstop)
+    "E2DRUGS",                   // 61 TBoGT: Snow Queen         (drug wars)
+    "E2FREEFALL",                // 62 TBoGT: Adrenaline Junkie  (parachute)
+    "E2STORY",                   // 63 TBoGT: Maestro            (e2endcredits)
+    "E2FAIRFLAIR",               // 64 TBoGT: Past the Velvet Rope (80% missions)
+    "E2ALLFLAIR",                // 65 TBoGT: Gold Star          (100% missions)
 };
-constexpr uint32_t kBaseCount = sizeof(kBaseNames) / sizeof(kBaseNames[0]);
+constexpr uint32_t kSteamCount = sizeof(kSteamNames) / sizeof(kSteamNames[0]);
+static_assert(kSteamCount == 66, "ids 0-65");
 
 // ---- Steamworks flat API (resolved at run time) ----------------------------
 
@@ -281,7 +301,7 @@ bool EnsureSteam() {
 // The Steam API name for a game achievement id, or "" for none.
 std::string SteamName(uint32_t episode, uint32_t id) {
   if (auto it = g_overrides.find({episode, id}); it != g_overrides.end()) return it->second;
-  if (episode == 0 && id < kBaseCount) return kBaseNames[id];
+  if (id < kSteamCount) return kSteamNames[id];
   return "";
 }
 
