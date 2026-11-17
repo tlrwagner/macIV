@@ -185,6 +185,16 @@ void Log(const char* fmt, ...) {
   }
 }
 
+// The port's per-user data directory, as the runtime's DataDir() computes
+// it (see mods.cpp). DataDir() itself reads the guest process, which does
+// not exist while the launcher window is up, and this code can run then.
+std::string DataRoot() {
+  if (const char* x = std::getenv("XDG_DATA_HOME"); x && *x) return std::string(x) + "/gtaiv";
+  if (const char* h = std::getenv("HOME"); h && *h)
+    return std::string(h) + "/Library/Application Support/gtaiv";
+  return "/tmp/gtaiv";
+}
+
 std::string FrameworksDir() {
   char exe[PATH_MAX];
   uint32_t size = sizeof(exe);
@@ -196,7 +206,7 @@ std::string FrameworksDir() {
 }
 
 void LoadOverrides() {
-  const std::string path = recomp::DataDir() + "/" + kOverrideFile;
+  const std::string path = DataRoot() + "/" + kOverrideFile;
   std::ifstream in(path);
   if (!in) return;
   std::string line;
@@ -321,7 +331,7 @@ void Unlock(uint32_t episode, uint32_t id) {
     if (g_logged_unmapped.insert({episode, id}).second)
       Log("game awarded achievement %u (episode %u): no Steam mapping, not sent. "
           "Add a line \"%u %u <API_NAME>\" to %s/%s to map it.",
-          id, episode, episode, id, recomp::DataDir().c_str(), kOverrideFile);
+          id, episode, episode, id, DataRoot().c_str(), kOverrideFile);
     return;
   }
   bool already = false;
